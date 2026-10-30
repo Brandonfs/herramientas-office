@@ -1,0 +1,158 @@
+<UserControl x:Class="HerramientasOffice.Views.UpdatesPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <!-- Encabezado de la página -->
+        <Border Grid.Row="0" Padding="28,22,28,16">
+            <StackPanel>
+                <TextBlock Text="Actualizaciones de Office" FontSize="22" FontWeight="Bold" />
+                <TextBlock Text="Lista, desinstala, bloquea y habilita los KB de Office (por ejemplo Excel) cada vez que salga uno nuevo."
+                           Foreground="{StaticResource MutedBrush}" Margin="0,4,0,0" />
+            </StackPanel>
+        </Border>
+
+        <!-- Aviso si no es administrador -->
+        <Border Grid.Row="1" x:Name="AdminWarning" Visibility="Collapsed" Background="#FEF3C7" Padding="28,10">
+            <TextBlock Foreground="#92400E" TextWrapping="Wrap"
+                       Text="La aplicación no se está ejecutando como administrador. Puedes listar los KB, pero desinstalar, bloquear y habilitar están desactivados. Cierra y ejecuta de nuevo como administrador." />
+        </Border>
+
+        <!-- Barra de herramientas -->
+        <Border Grid.Row="2" Background="White" BorderBrush="#E5E7EB" BorderThickness="0,0,0,1" Padding="28,14">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+
+                <StackPanel Grid.Row="0" Orientation="Horizontal">
+                    <Button x:Name="BtnRefresh" Content="Actualizar lista" Style="{StaticResource BtnGhost}" Click="BtnRefresh_Click" />
+                    <Border Width="1" Background="#E5E7EB" Margin="4,2,12,2" />
+                    <Button x:Name="BtnUninstall" Content="Desinstalar" Style="{StaticResource BtnDanger}" Click="BtnUninstall_Click" IsEnabled="False" />
+                    <Button x:Name="BtnBlock" Content="Bloquear" Style="{StaticResource Btn}" Click="BtnBlock_Click" IsEnabled="False" />
+                    <Button x:Name="BtnEnable" Content="Habilitar" Style="{StaticResource BtnSuccess}" Click="BtnEnable_Click" IsEnabled="False" />
+                    <Border Width="1" Background="#E5E7EB" Margin="4,2,12,2" />
+                    <Button x:Name="BtnMark" Content="Marcar / desmarcar problemática" Style="{StaticResource BtnGhost}" Click="BtnMark_Click" IsEnabled="False" />
+                    <Button x:Name="BtnCatalog" Content="Ver en catálogo de Microsoft" Style="{StaticResource BtnGhost}" Click="BtnCatalog_Click" IsEnabled="False" />
+                </StackPanel>
+
+                <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,12,0,0">
+                    <TextBlock Text="Producto" Foreground="{StaticResource MutedBrush}" VerticalAlignment="Center" Margin="0,0,8,0" />
+                    <ComboBox x:Name="ProductCombo" Width="140" Height="32" VerticalContentAlignment="Center" SelectionChanged="Filters_Changed">
+                        <ComboBoxItem Content="Solo Excel" IsSelected="True" />
+                        <ComboBoxItem Content="Todo Office" />
+                    </ComboBox>
+                    <TextBlock Text="Estado" Foreground="{StaticResource MutedBrush}" VerticalAlignment="Center" Margin="20,0,8,0" />
+                    <ComboBox x:Name="StateCombo" Width="140" Height="32" VerticalContentAlignment="Center" SelectionChanged="Filters_Changed">
+                        <ComboBoxItem Content="Todos" IsSelected="True" />
+                        <ComboBoxItem Content="Instaladas" />
+                        <ComboBoxItem Content="Disponibles" />
+                        <ComboBoxItem Content="Bloqueadas" />
+                    </ComboBox>
+                    <TextBlock Text="Buscar" Foreground="{StaticResource MutedBrush}" VerticalAlignment="Center" Margin="20,0,8,0" />
+                    <Grid Width="230">
+                        <TextBox x:Name="SearchBox" Height="32" VerticalContentAlignment="Center" Padding="8,0" TextChanged="SearchBox_TextChanged" />
+                        <TextBlock x:Name="SearchPlaceholder" Text="KB o texto..." Foreground="#9CA3AF" IsHitTestVisible="False"
+                                   VerticalAlignment="Center" Margin="10,0,0,0" />
+                    </Grid>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- Lista de KB -->
+        <Border Grid.Row="3" Margin="28,18,28,10" Background="White" CornerRadius="10"
+                BorderBrush="#E5E7EB" BorderThickness="1">
+            <Grid>
+                <DataGrid x:Name="UpdatesGrid"
+                          AutoGenerateColumns="False" IsReadOnly="True"
+                          CanUserAddRows="False" CanUserDeleteRows="False" CanUserResizeRows="False"
+                          SelectionMode="Extended" SelectionUnit="FullRow"
+                          HeadersVisibility="Column" GridLinesVisibility="None"
+                          RowHeight="46" Background="White" BorderThickness="0"
+                          ColumnHeaderStyle="{StaticResource GridHeader}"
+                          CellStyle="{StaticResource GridCell}"
+                          RowStyle="{StaticResource GridRow}"
+                          SelectionChanged="UpdatesGrid_SelectionChanged">
+                    <DataGrid.Columns>
+                        <DataGridTemplateColumn Header="KB" SortMemberPath="KbNumber" Width="140">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                        <TextBlock Text="⚠" Foreground="#B45309" Margin="0,0,6,0" ToolTip="Marcada como problemática"
+                                                   Visibility="{Binding IsProblem, Converter={StaticResource B2V}}" />
+                                        <TextBlock Text="{Binding KbDisplay}" FontWeight="SemiBold" />
+                                    </StackPanel>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                        <DataGridTextColumn Header="Producto" Binding="{Binding Product}" Width="90"
+                                            ElementStyle="{StaticResource CellText}" />
+                        <DataGridTemplateColumn Header="Estado" SortMemberPath="StateText" Width="130">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <Border x:Name="Pill" CornerRadius="11" Padding="10,3" HorizontalAlignment="Left" Background="#E5E7EB">
+                                        <TextBlock x:Name="PillText" Text="{Binding StateText}" FontSize="12" FontWeight="SemiBold" />
+                                    </Border>
+                                    <DataTemplate.Triggers>
+                                        <DataTrigger Binding="{Binding StateText}" Value="Instalada">
+                                            <Setter TargetName="Pill" Property="Background" Value="#DBEAFE" />
+                                            <Setter TargetName="PillText" Property="Foreground" Value="#1D4ED8" />
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding StateText}" Value="Disponible">
+                                            <Setter TargetName="Pill" Property="Background" Value="#FEF3C7" />
+                                            <Setter TargetName="PillText" Property="Foreground" Value="#B45309" />
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding StateText}" Value="Bloqueada">
+                                            <Setter TargetName="Pill" Property="Background" Value="#D1FAE5" />
+                                            <Setter TargetName="PillText" Property="Foreground" Value="#047857" />
+                                        </DataTrigger>
+                                    </DataTemplate.Triggers>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                        <DataGridTextColumn Header="Publicada" Binding="{Binding PublishedDisplay}" SortMemberPath="PublishedDate" Width="100"
+                                            ElementStyle="{StaticResource CellText}" />
+                        <DataGridTextColumn Header="Instalada" Binding="{Binding InstalledDisplay}" SortMemberPath="InstalledDate" Width="100"
+                                            ElementStyle="{StaticResource CellText}" />
+                        <DataGridTextColumn Header="Reemplazada por" Binding="{Binding SupersededByDisplay}" Width="190"
+                                            ElementStyle="{StaticResource CellText}" />
+                        <DataGridTextColumn Header="Descripción" Binding="{Binding Title}" Width="*"
+                                            ElementStyle="{StaticResource CellTitle}" />
+                    </DataGrid.Columns>
+                </DataGrid>
+
+                <TextBlock x:Name="EmptyText" Visibility="Collapsed" HorizontalAlignment="Center" VerticalAlignment="Center"
+                           Foreground="#9CA3AF" FontSize="14" Text="No hay actualizaciones que coincidan con el filtro." />
+            </Grid>
+        </Border>
+
+        <!-- Resumen y progreso -->
+        <Grid Grid.Row="4" Margin="28,0,28,6">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <TextBlock x:Name="SummaryText" Foreground="{StaticResource MutedBrush}" VerticalAlignment="Center" />
+            <StackPanel Grid.Column="1" Orientation="Horizontal">
+                <TextBlock x:Name="StatusText" Foreground="{StaticResource PrimaryBrush}" VerticalAlignment="Center" Margin="0,0,10,0" />
+                <ProgressBar x:Name="BusyBar" Width="140" Height="6" IsIndeterminate="True" Visibility="Collapsed" VerticalAlignment="Center" />
+            </StackPanel>
+        </Grid>
+
+        <!-- Registro -->
+        <Border Grid.Row="5" Margin="28,0,28,18" Background="#0F172A" CornerRadius="8" Padding="2">
+            <TextBox x:Name="LogBox" Height="96" IsReadOnly="True" Background="Transparent" BorderThickness="0"
+                     Foreground="#CBD5E1" FontFamily="Consolas" FontSize="12" Padding="10,8"
+                     VerticalScrollBarVisibility="Auto" TextWrapping="Wrap" />
+        </Border>
+    </Grid>
+</UserControl>

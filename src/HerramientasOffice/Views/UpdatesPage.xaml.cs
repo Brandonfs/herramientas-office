@@ -1,0 +1,334 @@
+using System.Collections.ObjectModel;
+using System.ComponentModel;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Data;
+using HerramientasOffice.Models;
+using HerramientasOffice.Services;
+
+namespace HerramientasOffice.Views;
+
+public partial class UpdatesPage : UserControl
+{
+    private readonly ObservableCollection<UpdateEntry> _items = new();
+    private readonly HashSet<string> _problemKbs = ProblemKbStore.Load();
+    private readonly bool _isAdmin = AppInfo.IsAdmin;
+    private ICollectionView? _view;
+    private bool _busy;
+    private bool _loadedOnce;
+
+    public UpdatesPage()
+    {
+        InitializeComponent();
+
+        if (!_isAdmin)
+            AdminWarning.Visibility = Visibility.Visible;
+
+        _view = CollectionViewSource.GetDefaultView(_items);
+        _view.Filter = FilterItem;
+        _view.SortDescriptions.Add(new SortDescription(nameof(UpdateEntry.KbNumber), ListSortDirection.Descending));
+        UpdatesGrid.ItemsSource = _view;
+
+        Loaded += async (_, _) =>
+        {
+            if (_loadedOnce) return;
+            _loadedOnce = true;
+            await RefreshAsync();
+        };
+    }
+
+    // ---------- Filtros ----------
+
+    private bool FilterItem(object obj)
+    {
+        var e = (UpdateEntry)obj;
+
+        if (ProductCombo.SelectedIndex == 0 && e.Product != "Excel") return false;
+
+        switch (StateCombo.SelectedIndex)
+        {
+            case 1 when e.State != UpdateState.Instalada: return false;
+            case 2 when e.State != UpdateState.Disponible: return false;
+            case 3 when e.State != UpdateState.Bloqueada: return false;
+        }
+
+        var text = SearchBox.Text.Trim();
+        if (text.Length > 0 &&
+            !e.Kb.Contains(text, StringComparison.OrdinalIgnoreCase) &&
+            !e.Title.Contains(text, StringComparison.OrdinalIgnoreCase))
+            return false;
+
+        return true;
+    }
+
+    private void Filters_Changed(object sender, SelectionChangedEventArgs e) => ApplyFilters();
+
+    private void SearchBox_TextChanged(object sender, TextChangedEventArgs e)
+    {
+        SearchPlaceholder.Visibility = SearchBox.Text.Length == 0 ? Visibility.Visible : Visibility.Collapsed;
+        ApplyFilters();
+    }
+
+    private void ApplyFilters()
+    {
+        if (_view is null) return;
+        _view.Refresh();
+        UpdateSummary();
+        UpdateButtons();
+    }
+
+    private void UpdateSummary()
+    {
+        if (_view is null) return;
+        var visible = _view.Cast<UpdateEntry>().ToList();
+        int inst = visible.Count(e => e.State == UpdateState.Instalada);
+        int disp = visible.Count(e => e.State == UpdateState.Disponible);
+        int bloq = visible.Count(e => e.State == UpdateState.Bloqueada);
+        SummaryText.Text = $"{visible.Count} en la lista  ·  {inst} instaladas  ·  {disp} disponibles  ·  {bloq} bloqueadas";
+        EmptyText.Visibility = visible.Count == 0 && !_busy ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    // ---------- Estado de la UI ----------
+
+    private List<UpdateEntry> Selected() => UpdatesGrid.SelectedItems.Cast<UpdateEntry>().ToList();
+
+    private void UpdatesGrid_SelectionChanged(object sender, SelectionChangedEventArgs e) => UpdateButtons();
+
+    private void UpdateButtons()
+    {
+        var sel = Selected();
+        BtnRefresh.IsEnabled = !_busy;
+        BtnUninstall.IsEnabled = !_busy && _isAdmin && sel.Any(s => s.State == UpdateState.Instalada && !string.IsNullOrEmpty(s.UninstallString));
+        BtnBlock.IsEnabled = !_busy && _isAdmin && sel.Any(s => s.State == UpdateState.Disponible && s.UpdateId is not null);
+        BtnEnable.IsEnabled = !_busy && _isAdmin && sel.Any(s => s.State == UpdateState.Bloqueada && s.UpdateId is not null);
+        BtnMark.IsEnabled = !_busy && sel.Any(s => s.Kb.Length > 0);
+        BtnCatalog.IsEnabled = sel.Any(s => s.Kb.Length > 0);
+    }
+
+    private void BtnCatalog_Click(object sender, RoutedEventArgs e)
+    {
+        var kb = Selected().Select(s => s.Kb).FirstOrDefault(k => k.Length > 0);
+        if (kb is null) return;
+
+        System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(
+            $"https://www.catalog.update.microsoft.com/Search.aspx?q={kb}") { UseShellExecute = true });
+    }
+
+    private void SetBusy(bool busy, string status = "")
+    {
+        _busy = busy;
+        BusyBar.Visibility = busy ? Visibility.Visible : Visibility.Collapsed;
+        StatusText.Text = status;
+        UpdateButtons();
+        UpdateSummary();
+    }
+
+    private void Log(string message)
+    {
+        LogBox.AppendText($"[{DateTime.Now:HH:mm:ss}] {message}{Environment.NewLine}");
+        LogBox.ScrollToEnd();
+    }
+
+    // ---------- Carga de datos ----------
+
+    private async void BtnRefresh_Click(object sender, RoutedEventArgs e) => await RefreshAsync();
+
+    private async Task RefreshAsync()
+    {
+        if (_busy) return;
+        SetBusy(true, "Buscando actualizaciones...");
+        Log("Buscando actualizaciones de Office...");
+
+        try
+        {
+            var installedTask = Task.Run(InstalledUpdatesService.GetInstalled);
+            var wuaTask = Task.Run(WindowsUpdateService.Search);
+            var historyTask = Task.Run(WindowsUpdateService.GetInstallDates);
+
+            _items.Clear();
+            var installedList = await installedTask;
+            var installDates = await historyTask;
+            foreach (var u in installedList)
+            {
+                u.InstalledDate ??= installDates.TryGetValue(u.Kb, out var d) ? d : null;
+                AddItem(u);
+            }
+            Log($"Instaladas encontradas: {_items.Count}.");
+            ApplyFilters();
+
+            try
+            {
+                var wua = await wuaTask;
+                var pending = wua.Where(w => !w.Installed).ToList();
+                foreach (var w in pending)
+                {
+                    AddItem(new UpdateEntry
+                    {
+                        Kb = w.Kb,
+                        Title = w.Title,
+                        Product = w.Product,
+                        State = w.Hidden ? UpdateState.Bloqueada : UpdateState.Disponible,
+                        UpdateId = w.UpdateId,
+                        PublishedDate = w.Date,
+                    });
+                }
+                Log($"Windows Update: {pending.Count} actualizaciones de Office (disponibles o bloqueadas).");
+                EnrichFromWindowsUpdate(wua);
+            }
+            catch (Exception ex)
+            {
+                Log($"No se pudo consultar Windows Update: {ex.Message}");
+            }
+        }
+        catch (Exception ex)
+        {
+            Log($"Error: {ex.Message}");
+        }
+        finally
+        {
+            SetBusy(false);
+            ApplyFilters();
+        }
+    }
+
+    /// <summary>
+    /// Completa la fecha de publicacion y detecta que KBs mas nuevos declaran reemplazar
+    /// a cada actualizacion (posibles correcciones publicadas por Microsoft).
+    /// </summary>
+    private void EnrichFromWindowsUpdate(List<WuaItem> wua)
+    {
+        foreach (var entry in _items)
+        {
+            var same = wua.Where(w =>
+                (entry.UpdateId is not null && string.Equals(w.UpdateId, entry.UpdateId, StringComparison.OrdinalIgnoreCase)) ||
+                (entry.UpdateId is null && entry.Kb.Length > 0 && string.Equals(w.Kb, entry.Kb, StringComparison.OrdinalIgnoreCase)))
+                .ToList();
+            if (same.Count == 0) continue;
+
+            entry.PublishedDate ??= same.Max(w => w.Date);
+
+            var ids = same.Select(w => w.UpdateId).ToHashSet(StringComparer.OrdinalIgnoreCase);
+            var replacers = wua
+                .Where(w => !ids.Contains(w.UpdateId) && w.Supersedes.Any(ids.Contains))
+                .Select(w => w.Kb.Length > 0 ? w.Kb : "(sin KB)")
+                .Where(k => !string.Equals(k, entry.Kb, StringComparison.OrdinalIgnoreCase))
+                .Distinct()
+                .OrderBy(k => k)
+                .ToList();
+            entry.SupersededBy = string.Join(", ", replacers);
+
+            if (entry.IsProblem && replacers.Count > 0)
+                Log($"{entry.KbDisplay} (problemática) fue reemplazada por: {entry.SupersededBy}. Revisa si corrige el error.");
+        }
+    }
+
+    private void AddItem(UpdateEntry entry)
+    {
+        entry.IsProblem = _problemKbs.Contains(entry.Kb);
+        _items.Add(entry);
+    }
+
+    // ---------- Acciones ----------
+
+    private async void BtnUninstall_Click(object sender, RoutedEventArgs e)
+    {
+        var targets = Selected()
+            .Where(s => s.State == UpdateState.Instalada && !string.IsNullOrEmpty(s.UninstallString))
+            .ToList();
+        if (targets.Count == 0) return;
+
+        var names = string.Join(Environment.NewLine, targets.Select(t => "  • " + (t.Kb.Length > 0 ? t.Kb : t.Title)));
+        var answer = MessageBox.Show(
+            $"Se desinstalarán las siguientes actualizaciones:{Environment.NewLine}{Environment.NewLine}{names}{Environment.NewLine}{Environment.NewLine}" +
+            "Cierra antes todos los libros de Excel abiertos. ¿Continuar?",
+            "Confirmar desinstalación", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+        if (answer != MessageBoxResult.Yes) return;
+
+        SetBusy(true, "Desinstalando...");
+        foreach (var t in targets)
+        {
+            Log($"Desinstalando {t.KbDisplay}...");
+            try
+            {
+                int code = await Task.Run(() => UninstallRunner.Run(t.UninstallString!));
+                Log($"{t.KbDisplay}: desinstalador finalizado (código {code}).");
+            }
+            catch (Exception ex)
+            {
+                Log($"{t.KbDisplay}: error al desinstalar: {ex.Message}");
+            }
+        }
+        SetBusy(false);
+        await RefreshAsync();
+    }
+
+    private async void BtnBlock_Click(object sender, RoutedEventArgs e) =>
+        await SetHiddenAsync(UpdateState.Disponible, hidden: true);
+
+    private async void BtnEnable_Click(object sender, RoutedEventArgs e) =>
+        await SetHiddenAsync(UpdateState.Bloqueada, hidden: false);
+
+    private async Task SetHiddenAsync(UpdateState fromState, bool hidden)
+    {
+        var targets = Selected().Where(s => s.State == fromState && s.UpdateId is not null).ToList();
+        if (targets.Count == 0) return;
+
+        string verb = hidden ? "Bloqueando" : "Habilitando";
+        SetBusy(true, $"{verb}...");
+        Log($"{verb} {string.Join(", ", targets.Select(t => t.KbDisplay))}...");
+
+        try
+        {
+            var ids = targets.Select(t => t.UpdateId!).ToList();
+            var changed = await Task.Run(() => WindowsUpdateService.SetHidden(ids, hidden));
+
+            foreach (var t in targets)
+            {
+                if (changed.Contains(t.UpdateId!))
+                {
+                    t.State = hidden ? UpdateState.Bloqueada : UpdateState.Disponible;
+                    Log(hidden
+                        ? $"{t.KbDisplay}: bloqueada (oculta). Windows Update ya no la ofrecerá."
+                        : $"{t.KbDisplay}: habilitada. Ya puede descargarse desde Windows Update.");
+                }
+                else
+                {
+                    Log($"{t.KbDisplay}: no se encontró en Windows Update, no se modificó. Prueba 'Actualizar lista'.");
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Log($"Error: {ex.Message}");
+        }
+        finally
+        {
+            SetBusy(false);
+            ApplyFilters();
+        }
+    }
+
+    private void BtnMark_Click(object sender, RoutedEventArgs e)
+    {
+        var sel = Selected().Where(s => s.Kb.Length > 0).ToList();
+        if (sel.Count == 0) return;
+
+        bool mark = sel.Any(s => !s.IsProblem);
+        foreach (var kb in sel.Select(s => s.Kb).Distinct())
+        {
+            if (mark) _problemKbs.Add(kb); else _problemKbs.Remove(kb);
+        }
+        foreach (var item in _items)
+            item.IsProblem = _problemKbs.Contains(item.Kb);
+
+        try
+        {
+            ProblemKbStore.Save(_problemKbs);
+            Log(mark ? "KB marcados como problemáticos." : "KB desmarcados.");
+        }
+        catch (Exception ex)
+        {
+            Log($"No se pudo guardar la lista de problemáticos: {ex.Message}");
+        }
+    }
+}
