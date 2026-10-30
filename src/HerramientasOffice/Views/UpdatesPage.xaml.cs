@@ -43,7 +43,14 @@ public partial class UpdatesPage : UserControl
     {
         var e = (UpdateEntry)obj;
 
-        if (ProductCombo.SelectedIndex == 0 && e.Product != "Excel") return false;
+        bool productOk = ProductCombo.SelectedIndex switch
+        {
+            0 => e.Product is "Excel" or "Word",
+            1 => e.Product == "Excel",
+            2 => e.Product == "Word",
+            _ => true,
+        };
+        if (!productOk) return false;
 
         switch (StateCombo.SelectedIndex)
         {
@@ -84,7 +91,7 @@ public partial class UpdatesPage : UserControl
         int inst = visible.Count(e => e.State == UpdateState.Instalada);
         int disp = visible.Count(e => e.State == UpdateState.Disponible);
         int bloq = visible.Count(e => e.State == UpdateState.Bloqueada);
-        SummaryText.Text = $"{visible.Count} en la lista  ·  {inst} instaladas  ·  {disp} disponibles  ·  {bloq} bloqueadas";
+        SummaryText.Text = $"{inst} instaladas  ·  {disp} disponibles  ·  {bloq} bloqueadas";
         EmptyText.Visibility = visible.Count == 0 && !_busy ? Visibility.Visible : Visibility.Collapsed;
     }
 
@@ -125,6 +132,7 @@ public partial class UpdatesPage : UserControl
 
     private void Log(string message)
     {
+        LogPanel.Visibility = Visibility.Visible;
         LogBox.AppendText($"[{DateTime.Now:HH:mm:ss}] {message}{Environment.NewLine}");
         LogBox.ScrollToEnd();
     }
@@ -136,8 +144,7 @@ public partial class UpdatesPage : UserControl
     private async Task RefreshAsync()
     {
         if (_busy) return;
-        SetBusy(true, "Buscando actualizaciones...");
-        Log("Buscando actualizaciones de Office...");
+        SetBusy(true, "Buscando...");
 
         try
         {
@@ -153,7 +160,6 @@ public partial class UpdatesPage : UserControl
                 u.InstalledDate ??= installDates.TryGetValue(u.Kb, out var d) ? d : null;
                 AddItem(u);
             }
-            Log($"Instaladas encontradas: {_items.Count}.");
             ApplyFilters();
 
             try
@@ -172,12 +178,11 @@ public partial class UpdatesPage : UserControl
                         PublishedDate = w.Date,
                     });
                 }
-                Log($"Windows Update: {pending.Count} actualizaciones de Office (disponibles o bloqueadas).");
                 EnrichFromWindowsUpdate(wua);
             }
             catch (Exception ex)
             {
-                Log($"No se pudo consultar Windows Update: {ex.Message}");
+                Log($"Windows Update no disponible: {ex.Message}");
             }
         }
         catch (Exception ex)
@@ -218,7 +223,7 @@ public partial class UpdatesPage : UserControl
             entry.SupersededBy = string.Join(", ", replacers);
 
             if (entry.IsProblem && replacers.Count > 0)
-                Log($"{entry.KbDisplay} (problemática) fue reemplazada por: {entry.SupersededBy}. Revisa si corrige el error.");
+                Log($"{entry.KbDisplay} fue reemplazada por {entry.SupersededBy}.");
         }
     }
 
@@ -239,23 +244,22 @@ public partial class UpdatesPage : UserControl
 
         var names = string.Join(Environment.NewLine, targets.Select(t => "  • " + (t.Kb.Length > 0 ? t.Kb : t.Title)));
         var answer = MessageBox.Show(
-            $"Se desinstalarán las siguientes actualizaciones:{Environment.NewLine}{Environment.NewLine}{names}{Environment.NewLine}{Environment.NewLine}" +
-            "Cierra antes todos los libros de Excel abiertos. ¿Continuar?",
-            "Confirmar desinstalación", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+            $"Desinstalar:{Environment.NewLine}{Environment.NewLine}{names}{Environment.NewLine}{Environment.NewLine}" +
+            "Cierra antes Excel y Word. ¿Continuar?",
+            "Desinstalar", MessageBoxButton.YesNo, MessageBoxImage.Warning);
         if (answer != MessageBoxResult.Yes) return;
 
         SetBusy(true, "Desinstalando...");
         foreach (var t in targets)
         {
-            Log($"Desinstalando {t.KbDisplay}...");
             try
             {
                 int code = await Task.Run(() => UninstallRunner.Run(t.UninstallString!));
-                Log($"{t.KbDisplay}: desinstalador finalizado (código {code}).");
+                Log($"{t.KbDisplay}: desinstalada (código {code}).");
             }
             catch (Exception ex)
             {
-                Log($"{t.KbDisplay}: error al desinstalar: {ex.Message}");
+                Log($"{t.KbDisplay}: error: {ex.Message}");
             }
         }
         SetBusy(false);
@@ -273,9 +277,7 @@ public partial class UpdatesPage : UserControl
         var targets = Selected().Where(s => s.State == fromState && s.UpdateId is not null).ToList();
         if (targets.Count == 0) return;
 
-        string verb = hidden ? "Bloqueando" : "Habilitando";
-        SetBusy(true, $"{verb}...");
-        Log($"{verb} {string.Join(", ", targets.Select(t => t.KbDisplay))}...");
+        SetBusy(true, hidden ? "Bloqueando..." : "Habilitando...");
 
         try
         {
@@ -287,13 +289,11 @@ public partial class UpdatesPage : UserControl
                 if (changed.Contains(t.UpdateId!))
                 {
                     t.State = hidden ? UpdateState.Bloqueada : UpdateState.Disponible;
-                    Log(hidden
-                        ? $"{t.KbDisplay}: bloqueada (oculta). Windows Update ya no la ofrecerá."
-                        : $"{t.KbDisplay}: habilitada. Ya puede descargarse desde Windows Update.");
+                    Log($"{t.KbDisplay}: {(hidden ? "bloqueada" : "habilitada")}.");
                 }
                 else
                 {
-                    Log($"{t.KbDisplay}: no se encontró en Windows Update, no se modificó. Prueba 'Actualizar lista'.");
+                    Log($"{t.KbDisplay}: no encontrada en Windows Update. Actualiza la lista.");
                 }
             }
         }
@@ -324,11 +324,11 @@ public partial class UpdatesPage : UserControl
         try
         {
             ProblemKbStore.Save(_problemKbs);
-            Log(mark ? "KB marcados como problemáticos." : "KB desmarcados.");
+            Log(mark ? "Marcados." : "Desmarcados.");
         }
         catch (Exception ex)
         {
-            Log($"No se pudo guardar la lista de problemáticos: {ex.Message}");
+            Log($"No se pudo guardar: {ex.Message}");
         }
     }
 }

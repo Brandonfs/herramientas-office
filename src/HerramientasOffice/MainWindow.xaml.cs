@@ -30,13 +30,13 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
 
-        VersionText.Text = $"Versión {AppInfo.CurrentVersion}";
+        VersionText.Text = $"v{AppInfo.CurrentVersion}";
 
         if (!AppInfo.IsAdmin)
         {
-            AdminBadge.Background = new SolidColorBrush(Color.FromRgb(0x78, 0x35, 0x0F));
-            AdminBadgeText.Text = "Sin permisos de administrador";
-            AdminBadgeText.Foreground = new SolidColorBrush(Color.FromRgb(0xFC, 0xD3, 0x4D));
+            AdminBadge.Background = new SolidColorBrush(Color.FromRgb(0x4A, 0x3F, 0x1D));
+            AdminBadgeText.Text = "Sin administrador";
+            AdminBadgeText.Foreground = new SolidColorBrush(Color.FromRgb(0xE6, 0xD2, 0x8A));
         }
 
         NavList.ItemsSource = _pages;
@@ -61,7 +61,7 @@ public partial class MainWindow : Window
         if (_checking || _applying) return;
         _checking = true;
         BtnCheckApp.IsEnabled = false;
-        UpdateStatus.Text = "Buscando actualizaciones de la app...";
+        UpdateStatus.Text = "Buscando...";
 
         try
         {
@@ -69,19 +69,19 @@ public partial class MainWindow : Window
             if (_release is null)
             {
                 UpdateBanner.Visibility = Visibility.Collapsed;
-                UpdateStatus.Text = "La app está al día.";
+                UpdateStatus.Text = "Al día";
             }
             else
             {
-                BannerText.Text = $"Hay una nueva versión disponible: {_release.Tag} (tienes {AppInfo.CurrentVersion}).";
+                BannerText.Text = $"Nueva versión {_release.Tag}";
                 BtnApplyUpdate.IsEnabled = true;
                 UpdateBanner.Visibility = Visibility.Visible;
-                UpdateStatus.Text = $"Disponible: {_release.Tag}";
+                UpdateStatus.Text = $"Disponible {_release.Tag}";
             }
         }
-        catch (Exception ex)
+        catch
         {
-            UpdateStatus.Text = $"No se pudo consultar: {ex.Message}";
+            UpdateStatus.Text = "Sin conexión";
         }
         finally
         {
@@ -101,9 +101,8 @@ public partial class MainWindow : Window
         if (_release is null || _applying) return;
 
         var answer = MessageBox.Show(
-            $"Se descargará la versión {_release.Tag} y la aplicación se reiniciará.{Environment.NewLine}{Environment.NewLine}" +
-            "Si hay una desinstalación en curso, espera a que termine. ¿Continuar?",
-            "Actualizar aplicación", MessageBoxButton.YesNo, MessageBoxImage.Question);
+            $"Se instalará {_release.Tag} y la app se reiniciará. ¿Continuar?",
+            "Actualizar", MessageBoxButton.YesNo, MessageBoxImage.Question);
         if (answer != MessageBoxResult.Yes) return;
 
         _applying = true;
@@ -117,13 +116,13 @@ public partial class MainWindow : Window
         {
             var progress = new Progress<double>(p => BannerProgress.Value = p);
             await AppUpdater.DownloadAndStageAsync(_release, progress);
-            BannerText.Text = "Aplicando actualización...";
+            BannerText.Text = "Reiniciando...";
             Application.Current.Shutdown();
         }
         catch (Exception ex)
         {
             BannerProgress.Visibility = Visibility.Collapsed;
-            BannerText.Text = $"No se pudo actualizar: {ex.Message}";
+            BannerText.Text = $"Error: {ex.Message}";
             BtnApplyUpdate.IsEnabled = true;
             BtnCheckApp.IsEnabled = true;
             _applying = false;

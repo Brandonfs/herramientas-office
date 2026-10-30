@@ -4,16 +4,16 @@
         Title="Herramientas Office"
         Width="1280" Height="780" MinWidth="1040" MinHeight="620"
         WindowStartupLocation="CenterScreen"
-        Background="#F4F6FA" FontFamily="Segoe UI" FontSize="13" Foreground="#111827">
+        Background="#F2F3F5" FontFamily="Segoe UI" FontSize="13" Foreground="#1F2328">
 
     <Grid>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="230" />
+            <ColumnDefinition Width="210" />
             <ColumnDefinition Width="*" />
         </Grid.ColumnDefinitions>
 
         <!-- Menú lateral -->
-        <Border Grid.Column="0" Background="#0F172A" Padding="16,22,16,16">
+        <Border Grid.Column="0" Background="#22262B" Padding="14,22,14,16">
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
@@ -21,9 +21,9 @@
                     <RowDefinition Height="Auto" />
                 </Grid.RowDefinitions>
 
-                <StackPanel Grid.Row="0" Margin="6,0,0,22">
-                    <TextBlock Text="Herramientas" FontSize="20" FontWeight="Bold" Foreground="White" />
-                    <TextBlock Text="Office" FontSize="20" FontWeight="Bold" Foreground="#60A5FA" />
+                <StackPanel Grid.Row="0" Margin="8,0,0,24">
+                    <TextBlock Text="Herramientas" FontSize="17" FontWeight="SemiBold" Foreground="White" />
+                    <TextBlock Text="Office" FontSize="17" FontWeight="SemiBold" Foreground="#7C858F" />
                 </StackPanel>
 
                 <ListBox x:Name="NavList" Grid.Row="1" Background="Transparent" BorderThickness="0"
@@ -36,13 +36,13 @@
                 </ListBox>
 
                 <StackPanel Grid.Row="2">
-                    <Border x:Name="AdminBadge" CornerRadius="12" Padding="12,5" HorizontalAlignment="Left" Background="#064E3B">
-                        <TextBlock x:Name="AdminBadgeText" Text="Administrador" Foreground="#6EE7B7" FontWeight="SemiBold" FontSize="12" />
+                    <Border x:Name="AdminBadge" CornerRadius="4" Padding="8,3" HorizontalAlignment="Left" Background="#2E3A33">
+                        <TextBlock x:Name="AdminBadgeText" Text="Administrador" Foreground="#A9CDB8" FontWeight="SemiBold" FontSize="12" />
                     </Border>
-                    <TextBlock x:Name="VersionText" Foreground="#94A3B8" FontSize="12" Margin="2,12,0,0" />
-                    <TextBlock x:Name="UpdateStatus" Foreground="#94A3B8" FontSize="12" Margin="2,2,0,8" TextWrapping="Wrap" />
-                    <Button x:Name="BtnCheckApp" Content="Buscar actualizaciones" Style="{StaticResource BtnGhost}"
-                            Margin="0" Padding="10,6" FontSize="12" Click="BtnCheckApp_Click" />
+                    <TextBlock x:Name="VersionText" Foreground="#7C858F" FontSize="12" Margin="2,12,0,0" />
+                    <TextBlock x:Name="UpdateStatus" Foreground="#7C858F" FontSize="12" Margin="2,2,0,8" TextWrapping="Wrap" />
+                    <Button x:Name="BtnCheckApp" Content="Buscar versión" Style="{StaticResource BtnGhost}"
+                            Margin="0" Padding="10,5" FontSize="12" Click="BtnCheckApp_Click" />
                 </StackPanel>
             </Grid>
         </Border>
@@ -55,20 +55,21 @@
             </Grid.RowDefinitions>
 
             <!-- Aviso de nueva versión de la app -->
-            <Border x:Name="UpdateBanner" Grid.Row="0" Visibility="Collapsed" Background="#DBEAFE" Padding="28,10">
+            <Border x:Name="UpdateBanner" Grid.Row="0" Visibility="Collapsed" Background="#E3E6EA" Padding="28,9">
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                        <TextBlock x:Name="BannerText" Foreground="#1E3A8A" FontWeight="SemiBold" VerticalAlignment="Center" />
-                        <ProgressBar x:Name="BannerProgress" Width="160" Height="6" Minimum="0" Maximum="1" Margin="14,0,0,0"
+                        <TextBlock x:Name="BannerText" Foreground="#2F3640" FontWeight="SemiBold" VerticalAlignment="Center" />
+                        <ProgressBar x:Name="BannerProgress" Width="140" Height="4" Minimum="0" Maximum="1" Margin="14,0,0,0"
+                                     Foreground="#2F3640" Background="#C9CDD2" BorderThickness="0"
                                      Visibility="Collapsed" VerticalAlignment="Center" />
                     </StackPanel>
                     <StackPanel Grid.Column="1" Orientation="Horizontal">
-                        <Button x:Name="BtnNotes" Content="Ver cambios" Style="{StaticResource BtnGhost}" Padding="12,6" Click="BtnNotes_Click" />
-                        <Button x:Name="BtnApplyUpdate" Content="Actualizar ahora" Style="{StaticResource Btn}" Padding="12,6"
+                        <Button x:Name="BtnNotes" Content="Cambios" Style="{StaticResource BtnGhost}" Padding="12,5" Click="BtnNotes_Click" />
+                        <Button x:Name="BtnApplyUpdate" Content="Actualizar" Style="{StaticResource Btn}" Padding="12,5"
                                 Margin="0" Click="BtnApplyUpdate_Click" />
                     </StackPanel>
                 </Grid>

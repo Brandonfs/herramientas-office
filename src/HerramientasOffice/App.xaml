@@ -5,17 +5,19 @@
     <Application.Resources>
         <BooleanToVisibilityConverter x:Key="B2V" />
 
-        <SolidColorBrush x:Key="PrimaryBrush" Color="#2563EB" />
-        <SolidColorBrush x:Key="DangerBrush" Color="#DC2626" />
-        <SolidColorBrush x:Key="SuccessBrush" Color="#059669" />
-        <SolidColorBrush x:Key="MutedBrush" Color="#6B7280" />
+        <!-- Paleta: grises carbón, un solo acento sobrio -->
+        <SolidColorBrush x:Key="InkBrush" Color="#1F2328" />
+        <SolidColorBrush x:Key="MutedBrush" Color="#6A7078" />
+        <SolidColorBrush x:Key="LineBrush" Color="#E3E5E8" />
+        <SolidColorBrush x:Key="PrimaryBrush" Color="#2F3640" />
+        <SolidColorBrush x:Key="DangerBrush" Color="#7F2B33" />
 
         <Style x:Key="Btn" TargetType="Button">
             <Setter Property="Foreground" Value="White" />
             <Setter Property="Background" Value="{StaticResource PrimaryBrush}" />
             <Setter Property="BorderBrush" Value="Transparent" />
             <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="Padding" Value="16,8" />
+            <Setter Property="Padding" Value="14,7" />
             <Setter Property="FontWeight" Value="SemiBold" />
             <Setter Property="Cursor" Value="Hand" />
             <Setter Property="Margin" Value="0,0,8,0" />
@@ -25,15 +27,15 @@
                         <Border x:Name="Bd" Background="{TemplateBinding Background}"
                                 BorderBrush="{TemplateBinding BorderBrush}"
                                 BorderThickness="{TemplateBinding BorderThickness}"
-                                CornerRadius="8" Padding="{TemplateBinding Padding}">
+                                CornerRadius="6" Padding="{TemplateBinding Padding}">
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Bd" Property="Opacity" Value="0.88" />
+                                <Setter TargetName="Bd" Property="Opacity" Value="0.85" />
                             </Trigger>
                             <Trigger Property="IsPressed" Value="True">
-                                <Setter TargetName="Bd" Property="Opacity" Value="0.72" />
+                                <Setter TargetName="Bd" Property="Opacity" Value="0.7" />
                             </Trigger>
                             <Trigger Property="IsEnabled" Value="False">
                                 <Setter TargetName="Bd" Property="Opacity" Value="0.35" />
@@ -46,22 +48,19 @@
         <Style x:Key="BtnDanger" TargetType="Button" BasedOn="{StaticResource Btn}">
             <Setter Property="Background" Value="{StaticResource DangerBrush}" />
         </Style>
-        <Style x:Key="BtnSuccess" TargetType="Button" BasedOn="{StaticResource Btn}">
-            <Setter Property="Background" Value="{StaticResource SuccessBrush}" />
-        </Style>
         <Style x:Key="BtnGhost" TargetType="Button" BasedOn="{StaticResource Btn}">
             <Setter Property="Background" Value="White" />
-            <Setter Property="Foreground" Value="#374151" />
-            <Setter Property="BorderBrush" Value="#D1D5DB" />
+            <Setter Property="Foreground" Value="#2F3640" />
+            <Setter Property="BorderBrush" Value="#D5D8DC" />
         </Style>
 
         <Style x:Key="GridHeader" TargetType="DataGridColumnHeader">
-            <Setter Property="Background" Value="#F9FAFB" />
-            <Setter Property="Foreground" Value="#6B7280" />
+            <Setter Property="Background" Value="#FAFAFB" />
+            <Setter Property="Foreground" Value="#6A7078" />
             <Setter Property="FontWeight" Value="SemiBold" />
             <Setter Property="FontSize" Value="12" />
-            <Setter Property="Padding" Value="12,10" />
-            <Setter Property="BorderBrush" Value="#E5E7EB" />
+            <Setter Property="Padding" Value="12,9" />
+            <Setter Property="BorderBrush" Value="#E3E5E8" />
             <Setter Property="BorderThickness" Value="0,0,0,1" />
             <Setter Property="HorizontalContentAlignment" Value="Left" />
         </Style>
@@ -81,41 +80,41 @@
         <Style x:Key="GridRow" TargetType="DataGridRow">
             <Setter Property="Background" Value="White" />
             <Setter Property="BorderThickness" Value="0,0,0,1" />
-            <Setter Property="BorderBrush" Value="#F1F5F9" />
+            <Setter Property="BorderBrush" Value="#F0F1F3" />
             <Style.Triggers>
                 <Trigger Property="IsMouseOver" Value="True">
-                    <Setter Property="Background" Value="#F8FAFC" />
+                    <Setter Property="Background" Value="#F7F8F9" />
                 </Trigger>
                 <Trigger Property="IsSelected" Value="True">
-                    <Setter Property="Background" Value="#EFF6FF" />
+                    <Setter Property="Background" Value="#ECEEF1" />
                 </Trigger>
             </Style.Triggers>
         </Style>
         <Style x:Key="CellText" TargetType="TextBlock">
             <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="Foreground" Value="#4B535C" />
         </Style>
         <Style x:Key="CellTitle" TargetType="TextBlock" BasedOn="{StaticResource CellText}">
             <Setter Property="TextTrimming" Value="CharacterEllipsis" />
             <Setter Property="ToolTip" Value="{Binding Title}" />
-            <Setter Property="Foreground" Value="#374151" />
         </Style>
 
         <Style x:Key="NavItem" TargetType="ListBoxItem">
-            <Setter Property="Foreground" Value="#CBD5E1" />
+            <Setter Property="Foreground" Value="#AEB5BE" />
             <Setter Property="Cursor" Value="Hand" />
-            <Setter Property="Margin" Value="0,0,0,4" />
+            <Setter Property="Margin" Value="0,0,0,2" />
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="ListBoxItem">
-                        <Border x:Name="Bd" CornerRadius="8" Padding="14,10" Background="Transparent">
+                        <Border x:Name="Bd" CornerRadius="6" Padding="12,9" Background="Transparent">
                             <ContentPresenter />
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Bd" Property="Background" Value="#1E293B" />
+                                <Setter TargetName="Bd" Property="Background" Value="#2C3137" />
                             </Trigger>
                             <Trigger Property="IsSelected" Value="True">
-                                <Setter TargetName="Bd" Property="Background" Value="#2563EB" />
+                                <Setter TargetName="Bd" Property="Background" Value="#3A4048" />
                                 <Setter Property="Foreground" Value="White" />
                             </Trigger>
                         </ControlTemplate.Triggers>
