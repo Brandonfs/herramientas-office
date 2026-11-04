@@ -15,7 +15,7 @@ public partial class UpdatesPage : UserControl
     private readonly bool _isAdmin = AppInfo.IsAdmin;
     private ICollectionView? _view;
     private bool _busy;
-    private bool _loadedOnce;
+    private bool _searched;
 
     public UpdatesPage()
     {
@@ -29,12 +29,8 @@ public partial class UpdatesPage : UserControl
         _view.SortDescriptions.Add(new SortDescription(nameof(UpdateEntry.KbNumber), ListSortDirection.Descending));
         UpdatesGrid.ItemsSource = _view;
 
-        Loaded += async (_, _) =>
-        {
-            if (_loadedOnce) return;
-            _loadedOnce = true;
-            await RefreshAsync();
-        };
+        // La busqueda no arranca sola: se hace con el boton "Actualizar".
+        UpdateSummary();
     }
 
     // ---------- Filtros ----------
@@ -92,6 +88,7 @@ public partial class UpdatesPage : UserControl
         int disp = visible.Count(e => e.State == UpdateState.Disponible);
         int bloq = visible.Count(e => e.State == UpdateState.Bloqueada);
         SummaryText.Text = $"{inst} instaladas  ·  {disp} disponibles  ·  {bloq} bloqueadas";
+        EmptyText.Text = _searched ? "Sin resultados" : "Pulsa Actualizar para buscar";
         EmptyText.Visibility = visible.Count == 0 && !_busy ? Visibility.Visible : Visibility.Collapsed;
     }
 
@@ -144,6 +141,7 @@ public partial class UpdatesPage : UserControl
     private async Task RefreshAsync()
     {
         if (_busy) return;
+        _searched = true;
         SetBusy(true, "Buscando...");
 
         try
