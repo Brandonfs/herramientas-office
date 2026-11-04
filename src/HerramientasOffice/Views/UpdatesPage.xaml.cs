@@ -45,9 +45,8 @@ public partial class UpdatesPage : UserControl
 
         bool productOk = ProductCombo.SelectedIndex switch
         {
-            0 => e.Product is "Excel" or "Word",
-            1 => e.Product == "Excel",
-            2 => e.Product == "Word",
+            0 => e.Product == "Excel",
+            1 => e.Product == "Word",
             _ => true,
         };
         if (!productOk) return false;
@@ -148,9 +147,11 @@ public partial class UpdatesPage : UserControl
 
         try
         {
+            // Todo arranca en paralelo; cada parte se muestra en cuanto esta lista.
             var installedTask = Task.Run(InstalledUpdatesService.GetInstalled);
-            var wuaTask = Task.Run(WindowsUpdateService.Search);
             var historyTask = Task.Run(WindowsUpdateService.GetInstallDates);
+            var pendingTask = Task.Run(WindowsUpdateService.SearchPending);
+            var wuaInstalledTask = Task.Run(WindowsUpdateService.SearchInstalled);
 
             _items.Clear();
             var installedList = await installedTask;
@@ -164,8 +165,7 @@ public partial class UpdatesPage : UserControl
 
             try
             {
-                var wua = await wuaTask;
-                var pending = wua.Where(w => !w.Installed).ToList();
+                var pending = await pendingTask;
                 foreach (var w in pending)
                 {
                     AddItem(new UpdateEntry
@@ -178,6 +178,10 @@ public partial class UpdatesPage : UserControl
                         PublishedDate = w.Date,
                     });
                 }
+                ApplyFilters();
+                StatusText.Text = "Completando...";
+
+                var wua = pending.Concat(await wuaInstalledTask).ToList();
                 EnrichFromWindowsUpdate(wua);
             }
             catch (Exception ex)

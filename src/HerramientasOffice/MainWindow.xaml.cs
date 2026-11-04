@@ -19,7 +19,7 @@ public partial class MainWindow : Window
     // Para agregar una funcion nueva (por ejemplo Licencias) basta con anadir una entrada aqui.
     private readonly List<NavEntry> _pages = new()
     {
-        new NavEntry { Title = "Actualizaciones de Office", Create = () => new UpdatesPage() },
+        new NavEntry { Title = "Actualizaciones", Create = () => new UpdatesPage() },
     };
 
     private ReleaseInfo? _release;

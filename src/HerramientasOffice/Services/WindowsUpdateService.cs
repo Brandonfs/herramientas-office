@@ -19,7 +19,21 @@ public static class WindowsUpdateService
 {
     private const string MicrosoftUpdateServiceId = "7971f918-a847-4430-9279-4a52d1efe18d";
 
+    private static readonly object RegistrationLock = new();
+    private static bool _registrationDone;
+
     private static void EnsureServiceRegistered()
+    {
+        // Las busquedas corren en paralelo: el registro se hace una sola vez.
+        lock (RegistrationLock)
+        {
+            if (_registrationDone) return;
+            RegisterService();
+            _registrationDone = true;
+        }
+    }
+
+    private static void RegisterService()
     {
         // El servicio debe estar registrado en el cliente para poder buscarlo por ID.
         // Flag 2 = solo registro online; NO se registra con Automatic Updates (flag 4),
@@ -51,24 +65,24 @@ public static class WindowsUpdateService
         return searcher;
     }
 
-    /// <summary>
-    /// Devuelve las actualizaciones de Office pendientes, bloqueadas e instaladas
-    /// (estas ultimas solo para completar fechas y relaciones de reemplazo).
-    /// </summary>
-    public static List<WuaItem> Search()
+    /// <summary>Actualizaciones de Office disponibles y bloqueadas.</summary>
+    public static List<WuaItem> SearchPending()
     {
         EnsureServiceRegistered();
 
         var pending = Task.Run(() => Query(installed: false, hidden: false));
         var blocked = Task.Run(() => Query(installed: false, hidden: true));
-        var installed = Task.Run(() =>
-        {
-            try { return Query(installed: true, hidden: false); }
-            catch { return new List<WuaItem>(); } // opcional: solo aporta fechas
-        });
 
-        Task.WaitAll(pending, blocked, installed);
-        return pending.Result.Concat(blocked.Result).Concat(installed.Result).ToList();
+        Task.WaitAll(pending, blocked);
+        return pending.Result.Concat(blocked.Result).ToList();
+    }
+
+    /// <summary>Actualizaciones de Office instaladas (solo aportan fechas y relaciones de reemplazo).</summary>
+    public static List<WuaItem> SearchInstalled()
+    {
+        EnsureServiceRegistered();
+        try { return Query(installed: true, hidden: false); }
+        catch { return new List<WuaItem>(); }
     }
 
     /// <summary>Fecha de la ultima instalacion exitosa de cada KB segun el historial de Windows Update.</summary>

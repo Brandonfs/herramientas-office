@@ -17,10 +17,11 @@
             <Setter Property="Background" Value="{StaticResource PrimaryBrush}" />
             <Setter Property="BorderBrush" Value="Transparent" />
             <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="Padding" Value="14,7" />
+            <Setter Property="Padding" Value="11,5" />
+            <Setter Property="FontSize" Value="12" />
             <Setter Property="FontWeight" Value="SemiBold" />
             <Setter Property="Cursor" Value="Hand" />
-            <Setter Property="Margin" Value="0,0,8,0" />
+            <Setter Property="Margin" Value="0,0,6,6" />
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
@@ -58,8 +59,8 @@
             <Setter Property="Background" Value="#FAFAFB" />
             <Setter Property="Foreground" Value="#6A7078" />
             <Setter Property="FontWeight" Value="SemiBold" />
-            <Setter Property="FontSize" Value="12" />
-            <Setter Property="Padding" Value="12,9" />
+            <Setter Property="FontSize" Value="11" />
+            <Setter Property="Padding" Value="10,6" />
             <Setter Property="BorderBrush" Value="#E3E5E8" />
             <Setter Property="BorderThickness" Value="0,0,0,1" />
             <Setter Property="HorizontalContentAlignment" Value="Left" />
@@ -70,7 +71,7 @@
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="DataGridCell">
-                        <Border Background="Transparent" Padding="12,0">
+                        <Border Background="Transparent" Padding="10,0">
                             <ContentPresenter VerticalAlignment="Center" />
                         </Border>
                     </ControlTemplate>
@@ -106,7 +107,7 @@
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="ListBoxItem">
-                        <Border x:Name="Bd" CornerRadius="6" Padding="12,9" Background="Transparent">
+                        <Border x:Name="Bd" CornerRadius="6" Padding="10,7" Background="Transparent">
                             <ContentPresenter />
                         </Border>
                         <ControlTemplate.Triggers>

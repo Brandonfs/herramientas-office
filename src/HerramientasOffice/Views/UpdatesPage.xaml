@@ -5,80 +5,66 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
-        <TextBlock Grid.Row="0" Text="Actualizaciones" FontSize="20" FontWeight="SemiBold"
-                   Foreground="{StaticResource InkBrush}" Margin="28,22,28,8" />
-
-        <Border Grid.Row="1" x:Name="AdminWarning" Visibility="Collapsed" Background="#F1EBDA" Padding="28,8">
-            <TextBlock Foreground="#6B5313" Text="Sin permisos de administrador: solo lectura." />
+        <Border Grid.Row="0" x:Name="AdminWarning" Visibility="Collapsed" Background="#F1EBDA" Padding="14,5">
+            <TextBlock Foreground="#6B5313" FontSize="12" Text="Sin permisos de administrador: solo lectura." />
         </Border>
 
-        <!-- Acciones y filtros -->
-        <Border Grid.Row="2" Padding="28,12,28,12">
-            <StackPanel>
-                <StackPanel Orientation="Horizontal">
-                    <Button x:Name="BtnRefresh" Content="Actualizar" Style="{StaticResource BtnGhost}" Click="BtnRefresh_Click" />
-                    <Border Width="1" Background="#D5D8DC" Margin="4,4,12,4" />
-                    <Button x:Name="BtnUninstall" Content="Desinstalar" Style="{StaticResource BtnDanger}" Click="BtnUninstall_Click" IsEnabled="False" />
-                    <Button x:Name="BtnBlock" Content="Bloquear" Style="{StaticResource Btn}" Click="BtnBlock_Click" IsEnabled="False" />
-                    <Button x:Name="BtnEnable" Content="Habilitar" Style="{StaticResource Btn}" Click="BtnEnable_Click" IsEnabled="False" />
-                    <Border Width="1" Background="#D5D8DC" Margin="4,4,12,4" />
-                    <Button x:Name="BtnMark" Content="Marcar" ToolTip="Marcar o desmarcar como problemática"
-                            Style="{StaticResource BtnGhost}" Click="BtnMark_Click" IsEnabled="False" />
-                    <Button x:Name="BtnCatalog" Content="Catálogo" ToolTip="Ver en el catálogo de Microsoft"
-                            Style="{StaticResource BtnGhost}" Click="BtnCatalog_Click" IsEnabled="False" />
-                </StackPanel>
-
-                <StackPanel Orientation="Horizontal" Margin="0,12,0,0">
-                    <ComboBox x:Name="ProductCombo" Width="150" Height="30" VerticalContentAlignment="Center"
-                              Margin="0,0,10,0" SelectionChanged="Filters_Changed">
-                        <ComboBoxItem Content="Excel y Word" IsSelected="True" />
-                        <ComboBoxItem Content="Excel" />
-                        <ComboBoxItem Content="Word" />
-                        <ComboBoxItem Content="Todo Office" />
-                    </ComboBox>
-                    <ComboBox x:Name="StateCombo" Width="130" Height="30" VerticalContentAlignment="Center"
-                              Margin="0,0,10,0" SelectionChanged="Filters_Changed">
-                        <ComboBoxItem Content="Todos" IsSelected="True" />
-                        <ComboBoxItem Content="Instaladas" />
-                        <ComboBoxItem Content="Disponibles" />
-                        <ComboBoxItem Content="Bloqueadas" />
-                    </ComboBox>
-                    <Grid Width="220">
-                        <TextBox x:Name="SearchBox" Height="30" VerticalContentAlignment="Center" Padding="8,0"
-                                 BorderBrush="#D5D8DC" TextChanged="SearchBox_TextChanged" />
-                        <TextBlock x:Name="SearchPlaceholder" Text="Buscar" Foreground="#9AA0A8" IsHitTestVisible="False"
-                                   VerticalAlignment="Center" Margin="10,0,0,0" />
-                    </Grid>
-                </StackPanel>
-            </StackPanel>
-        </Border>
+        <!-- Acciones y filtros (se acomodan en varias filas si la ventana es angosta) -->
+        <WrapPanel Grid.Row="1" Margin="14,10,14,2">
+            <Button x:Name="BtnRefresh" Content="Actualizar" Style="{StaticResource BtnGhost}" Click="BtnRefresh_Click" />
+            <Button x:Name="BtnUninstall" Content="Desinstalar" Style="{StaticResource BtnDanger}" Click="BtnUninstall_Click" IsEnabled="False" />
+            <Button x:Name="BtnBlock" Content="Bloquear" Style="{StaticResource Btn}" Click="BtnBlock_Click" IsEnabled="False" />
+            <Button x:Name="BtnEnable" Content="Habilitar" Style="{StaticResource Btn}" Click="BtnEnable_Click" IsEnabled="False" />
+            <Button x:Name="BtnMark" Content="Marcar" ToolTip="Marcar o desmarcar como problemática"
+                    Style="{StaticResource BtnGhost}" Click="BtnMark_Click" IsEnabled="False" />
+            <Button x:Name="BtnCatalog" Content="Catálogo" ToolTip="Ver en el catálogo de Microsoft"
+                    Style="{StaticResource BtnGhost}" Click="BtnCatalog_Click" IsEnabled="False" />
+            <ComboBox x:Name="ProductCombo" Width="95" Height="28" FontSize="12" VerticalContentAlignment="Center"
+                      Margin="8,0,6,6" SelectionChanged="Filters_Changed">
+                <ComboBoxItem Content="Excel" IsSelected="True" />
+                <ComboBoxItem Content="Word" />
+                <ComboBoxItem Content="Todo Office" />
+            </ComboBox>
+            <ComboBox x:Name="StateCombo" Width="95" Height="28" FontSize="12" VerticalContentAlignment="Center"
+                      Margin="0,0,6,6" SelectionChanged="Filters_Changed">
+                <ComboBoxItem Content="Todos" IsSelected="True" />
+                <ComboBoxItem Content="Instaladas" />
+                <ComboBoxItem Content="Disponibles" />
+                <ComboBoxItem Content="Bloqueadas" />
+            </ComboBox>
+            <Grid Width="120" Margin="0,0,0,6">
+                <TextBox x:Name="SearchBox" Height="28" FontSize="12" VerticalContentAlignment="Center" Padding="6,0"
+                         BorderBrush="#D5D8DC" TextChanged="SearchBox_TextChanged" />
+                <TextBlock x:Name="SearchPlaceholder" Text="Buscar" FontSize="12" Foreground="#9AA0A8" IsHitTestVisible="False"
+                           VerticalAlignment="Center" Margin="8,0,0,0" />
+            </Grid>
+        </WrapPanel>
 
         <!-- Lista -->
-        <Border Grid.Row="3" Margin="28,0,28,10" Background="White" CornerRadius="8"
+        <Border Grid.Row="2" Margin="14,4,14,6" Background="White" CornerRadius="6"
                 BorderBrush="#E3E5E8" BorderThickness="1">
             <Grid>
-                <DataGrid x:Name="UpdatesGrid"
+                <DataGrid x:Name="UpdatesGrid" FontSize="12"
                           AutoGenerateColumns="False" IsReadOnly="True"
                           CanUserAddRows="False" CanUserDeleteRows="False" CanUserResizeRows="False"
                           SelectionMode="Extended" SelectionUnit="FullRow"
                           HeadersVisibility="Column" GridLinesVisibility="None"
-                          RowHeight="42" Background="White" BorderThickness="0"
+                          RowHeight="32" Background="White" BorderThickness="0"
                           ColumnHeaderStyle="{StaticResource GridHeader}"
                           CellStyle="{StaticResource GridCell}"
                           RowStyle="{StaticResource GridRow}"
                           SelectionChanged="UpdatesGrid_SelectionChanged">
                     <DataGrid.Columns>
-                        <DataGridTemplateColumn Header="KB" SortMemberPath="KbNumber" Width="140">
+                        <DataGridTemplateColumn Header="KB" SortMemberPath="KbNumber" Width="115">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
                                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                        <TextBlock Text="●" Foreground="#B0832B" FontSize="9" VerticalAlignment="Center" Margin="0,0,7,0"
+                                        <TextBlock Text="●" Foreground="#B0832B" FontSize="8" VerticalAlignment="Center" Margin="0,0,6,0"
                                                    ToolTip="Marcada como problemática"
                                                    Visibility="{Binding IsProblem, Converter={StaticResource B2V}}" />
                                         <TextBlock Text="{Binding KbDisplay}" FontWeight="SemiBold" Foreground="{StaticResource InkBrush}" />
@@ -86,13 +72,11 @@
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>
                         </DataGridTemplateColumn>
-                        <DataGridTextColumn Header="Producto" Binding="{Binding Product}" Width="90"
-                                            ElementStyle="{StaticResource CellText}" />
-                        <DataGridTemplateColumn Header="Estado" SortMemberPath="StateText" Width="120">
+                        <DataGridTemplateColumn Header="Estado" SortMemberPath="StateText" Width="95">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
-                                    <Border x:Name="Pill" CornerRadius="4" Padding="8,2" HorizontalAlignment="Left" Background="#E8EAED">
-                                        <TextBlock x:Name="PillText" Text="{Binding StateText}" FontSize="12" FontWeight="SemiBold"
+                                    <Border x:Name="Pill" CornerRadius="4" Padding="6,1" HorizontalAlignment="Left" Background="#E8EAED">
+                                        <TextBlock x:Name="PillText" Text="{Binding StateText}" FontSize="11" FontWeight="SemiBold"
                                                    Foreground="#3A424C" />
                                     </Border>
                                     <DataTemplate.Triggers>
@@ -108,11 +92,11 @@
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>
                         </DataGridTemplateColumn>
-                        <DataGridTextColumn Header="Publicada" Binding="{Binding PublishedDisplay}" SortMemberPath="PublishedDate" Width="100"
+                        <DataGridTextColumn Header="Publicada" Binding="{Binding PublishedDisplay}" SortMemberPath="PublishedDate" Width="82"
                                             ElementStyle="{StaticResource CellText}" />
-                        <DataGridTextColumn Header="Instalada" Binding="{Binding InstalledDisplay}" SortMemberPath="InstalledDate" Width="100"
+                        <DataGridTextColumn Header="Instalada" Binding="{Binding InstalledDisplay}" SortMemberPath="InstalledDate" Width="82"
                                             ElementStyle="{StaticResource CellText}" />
-                        <DataGridTextColumn Header="Reemplazo" Binding="{Binding SupersededByDisplay}" Width="170"
+                        <DataGridTextColumn Header="Reemplazo" Binding="{Binding SupersededByDisplay}" Width="100"
                                             ElementStyle="{StaticResource CellText}" />
                         <DataGridTextColumn Header="Descripción" Binding="{Binding Title}" Width="*"
                                             ElementStyle="{StaticResource CellTitle}" />
@@ -120,28 +104,28 @@
                 </DataGrid>
 
                 <TextBlock x:Name="EmptyText" Visibility="Collapsed" HorizontalAlignment="Center" VerticalAlignment="Center"
-                           Foreground="#9AA0A8" FontSize="14" Text="Sin resultados" />
+                           Foreground="#9AA0A8" Text="Sin resultados" />
             </Grid>
         </Border>
 
         <!-- Resumen y progreso -->
-        <Grid Grid.Row="4" Margin="28,0,28,6">
+        <Grid Grid.Row="3" Margin="14,0,14,4">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
-            <TextBlock x:Name="SummaryText" Foreground="{StaticResource MutedBrush}" VerticalAlignment="Center" />
+            <TextBlock x:Name="SummaryText" FontSize="12" Foreground="{StaticResource MutedBrush}" VerticalAlignment="Center" />
             <StackPanel Grid.Column="1" Orientation="Horizontal">
-                <TextBlock x:Name="StatusText" Foreground="{StaticResource MutedBrush}" VerticalAlignment="Center" Margin="0,0,10,0" />
-                <ProgressBar x:Name="BusyBar" Width="120" Height="4" IsIndeterminate="True" Visibility="Collapsed"
+                <TextBlock x:Name="StatusText" FontSize="12" Foreground="{StaticResource MutedBrush}" VerticalAlignment="Center" Margin="0,0,8,0" />
+                <ProgressBar x:Name="BusyBar" Width="90" Height="3" IsIndeterminate="True" Visibility="Collapsed"
                              Foreground="#2F3640" Background="#E3E5E8" BorderThickness="0" VerticalAlignment="Center" />
             </StackPanel>
         </Grid>
 
-        <!-- Registro -->
-        <Border x:Name="LogPanel" Grid.Row="5" Visibility="Collapsed" Margin="28,0,28,18" Background="#22262B" CornerRadius="6" Padding="2">
-            <TextBox x:Name="LogBox" Height="64" IsReadOnly="True" Background="Transparent" BorderThickness="0"
-                     Foreground="#C5CAD1" FontFamily="Consolas" FontSize="12" Padding="10,6"
+        <!-- Registro (solo aparece cuando hay actividad) -->
+        <Border x:Name="LogPanel" Grid.Row="4" Visibility="Collapsed" Margin="14,0,14,10" Background="#22262B" CornerRadius="5" Padding="1">
+            <TextBox x:Name="LogBox" Height="42" IsReadOnly="True" Background="Transparent" BorderThickness="0"
+                     Foreground="#C5CAD1" FontFamily="Consolas" FontSize="11" Padding="8,4"
                      VerticalScrollBarVisibility="Auto" TextWrapping="Wrap" />
         </Border>
     </Grid>
