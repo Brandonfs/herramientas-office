@@ -72,10 +72,11 @@
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>
                         </DataGridTemplateColumn>
-                        <DataGridTemplateColumn Header="Estado" SortMemberPath="StateText" Width="95">
+                        <DataGridTemplateColumn Header="Estado" SortMemberPath="StateText" Width="112">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
-                                    <Border x:Name="Pill" CornerRadius="4" Padding="6,1" HorizontalAlignment="Left" Background="#E8EAED">
+                                    <Border x:Name="Pill" CornerRadius="4" Padding="6,1" HorizontalAlignment="Left" Background="#E8EAED"
+                                            BorderThickness="1" BorderBrush="Transparent">
                                         <TextBlock x:Name="PillText" Text="{Binding StateText}" FontSize="11" FontWeight="SemiBold"
                                                    Foreground="#3A424C" />
                                     </Border>
@@ -87,6 +88,11 @@
                                         <DataTrigger Binding="{Binding StateText}" Value="Bloqueada">
                                             <Setter TargetName="Pill" Property="Background" Value="#DDE8E1" />
                                             <Setter TargetName="PillText" Property="Foreground" Value="#2E5A44" />
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding StateText}" Value="No instalada">
+                                            <Setter TargetName="Pill" Property="Background" Value="Transparent" />
+                                            <Setter TargetName="Pill" Property="BorderBrush" Value="#D5D8DC" />
+                                            <Setter TargetName="PillText" Property="Foreground" Value="#8A9098" />
                                         </DataTrigger>
                                     </DataTemplate.Triggers>
                                 </DataTemplate>

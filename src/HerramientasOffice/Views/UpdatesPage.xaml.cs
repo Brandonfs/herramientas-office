@@ -43,7 +43,8 @@ public partial class UpdatesPage : UserControl
     {
         var e = (UpdateEntry)obj;
 
-        bool productOk = ProductCombo.SelectedIndex switch
+        // Los KB marcados como problematicos se muestran siempre, sin importar el producto.
+        bool productOk = e.IsProblem || ProductCombo.SelectedIndex switch
         {
             0 => e.Product == "Excel",
             1 => e.Product == "Word",
@@ -183,6 +184,7 @@ public partial class UpdatesPage : UserControl
 
                 var wua = pending.Concat(await wuaInstalledTask).ToList();
                 EnrichFromWindowsUpdate(wua);
+                AddMissingProblemKbs();
             }
             catch (Exception ex)
             {
@@ -228,6 +230,32 @@ public partial class UpdatesPage : UserControl
 
             if (entry.IsProblem && replacers.Count > 0)
                 Log($"{entry.KbDisplay} fue reemplazada por {entry.SupersededBy}.");
+        }
+    }
+
+    private static readonly Dictionary<string, string> KnownProducts = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["KB5002914"] = "Excel",
+        ["KB5002934"] = "Excel",
+    };
+
+    /// <summary>
+    /// Los KB problematicos siempre aparecen en la lista; si el equipo no los tiene
+    /// instalados ni Windows Update los ofrece, se muestran como "No instalada".
+    /// </summary>
+    private void AddMissingProblemKbs()
+    {
+        foreach (var kb in _problemKbs.OrderBy(k => k))
+        {
+            if (_items.Any(i => string.Equals(i.Kb, kb, StringComparison.OrdinalIgnoreCase))) continue;
+
+            AddItem(new UpdateEntry
+            {
+                Kb = kb,
+                Title = "No instalada ni ofrecida por Windows Update en este equipo",
+                Product = KnownProducts.TryGetValue(kb, out var product) ? product : "Office",
+                State = UpdateState.NoInstalada,
+            });
         }
     }
 

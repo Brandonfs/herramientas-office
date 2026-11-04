@@ -3,7 +3,7 @@ using System.Runtime.CompilerServices;
 
 namespace HerramientasOffice.Models;
 
-public enum UpdateState { Instalada, Disponible, Bloqueada }
+public enum UpdateState { Instalada, Disponible, Bloqueada, NoInstalada }
 
 public sealed class UpdateEntry : INotifyPropertyChanged
 {
@@ -28,7 +28,7 @@ public sealed class UpdateEntry : INotifyPropertyChanged
         }
     }
 
-    public string StateText => State.ToString();
+    public string StateText => State == UpdateState.NoInstalada ? "No instalada" : State.ToString();
 
     public bool IsProblem
     {
