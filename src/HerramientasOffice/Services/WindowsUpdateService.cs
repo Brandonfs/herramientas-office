@@ -7,7 +7,6 @@ public sealed record WuaItem(
     string Title,
     string Product,
     DateTime? Date,
-    bool Installed,
     bool Hidden,
     IReadOnlyList<string> Supersedes);
 
@@ -65,24 +64,21 @@ public static class WindowsUpdateService
         return searcher;
     }
 
-    /// <summary>Actualizaciones de Office disponibles y bloqueadas.</summary>
+    /// <summary>
+    /// Actualizaciones de Office que Windows Update ofrece a este equipo (una sola consulta).
+    /// Cada consulta tarda ~15 s; lanzarlas en paralelo las vuelve mas lentas.
+    /// </summary>
     public static List<WuaItem> SearchPending()
     {
         EnsureServiceRegistered();
-
-        var pending = Task.Run(() => Query(installed: false, hidden: false));
-        var blocked = Task.Run(() => Query(installed: false, hidden: true));
-
-        Task.WaitAll(pending, blocked);
-        return pending.Result.Concat(blocked.Result).ToList();
+        return Query("IsInstalled=0 and Type='Software'");
     }
 
-    /// <summary>Actualizaciones de Office instaladas (solo aportan fechas y relaciones de reemplazo).</summary>
-    public static List<WuaItem> SearchInstalled()
+    /// <summary>Actualizaciones de Office ocultas (bloqueadas) en este equipo.</summary>
+    public static List<WuaItem> SearchHidden()
     {
         EnsureServiceRegistered();
-        try { return Query(installed: true, hidden: false); }
-        catch { return new List<WuaItem>(); }
+        return Query("IsInstalled=0 and IsHidden=1 and Type='Software'");
     }
 
     /// <summary>Fecha de la ultima instalacion exitosa de cada KB segun el historial de Windows Update.</summary>
@@ -118,12 +114,9 @@ public static class WindowsUpdateService
         return dates;
     }
 
-    private static List<WuaItem> Query(bool installed, bool hidden)
+    private static List<WuaItem> Query(string criteria)
     {
         var searcher = CreateSearcher();
-        string criteria = installed
-            ? "IsInstalled=1 and Type='Software'"
-            : $"IsInstalled=0 and IsHidden={(hidden ? 1 : 0)} and Type='Software'";
 
         dynamic result = searcher.Search(criteria);
         dynamic updates = result.Updates;
@@ -165,13 +158,15 @@ public static class WindowsUpdateService
             }
             catch { }
 
+            bool hidden = false;
+            try { hidden = (bool)u.IsHidden; } catch { }
+
             list.Add(new WuaItem(
                 UpdateId: (string)u.Identity.UpdateID,
                 Kb: kb,
                 Title: title,
                 Product: product,
                 Date: date,
-                Installed: installed,
                 Hidden: hidden,
                 Supersedes: supersedes));
         }

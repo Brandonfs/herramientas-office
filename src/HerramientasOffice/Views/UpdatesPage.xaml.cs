@@ -146,11 +146,15 @@ public partial class UpdatesPage : UserControl
 
         try
         {
-            // Todo arranca en paralelo; cada parte se muestra en cuanto esta lista.
+            // 1) Instaladas (registro + historial): instantaneo.
             var installedTask = Task.Run(InstalledUpdatesService.GetInstalled);
             var historyTask = Task.Run(WindowsUpdateService.GetInstallDates);
-            var pendingTask = Task.Run(WindowsUpdateService.SearchPending);
-            var wuaInstalledTask = Task.Run(WindowsUpdateService.SearchInstalled);
+            // Windows Update tarda ~15 s por consulta: se lanza ya, de a una a la vez.
+            var wuaTask = Task.Run(() =>
+            {
+                var found = WindowsUpdateService.SearchPending();
+                return found;
+            });
 
             _items.Clear();
             var installedList = await installedTask;
@@ -162,32 +166,43 @@ public partial class UpdatesPage : UserControl
             }
             ApplyFilters();
 
+            // 2) Catalogo de Microsoft: todos los KB publicados este anio (1-2 s).
+            StatusText.Text = "Catálogo...";
+            bool is64 = !installedList.Any(i => i.Title.Contains("32-Bit", StringComparison.OrdinalIgnoreCase))
+                        || installedList.Any(i => i.Title.Contains("64-Bit", StringComparison.OrdinalIgnoreCase));
             try
             {
-                var pending = await pendingTask;
-                foreach (var w in pending)
-                {
-                    AddItem(new UpdateEntry
-                    {
-                        Kb = w.Kb,
-                        Title = w.Title,
-                        Product = w.Product,
-                        State = w.Hidden ? UpdateState.Bloqueada : UpdateState.Disponible,
-                        UpdateId = w.UpdateId,
-                        PublishedDate = w.Date,
-                    });
-                }
-                ApplyFilters();
-                StatusText.Text = "Completando...";
+                var catalog = await CatalogService.GetRecentAsync(DateTime.Now.Year, is64);
+                AddCatalogRows(catalog);
+            }
+            catch (Exception ex)
+            {
+                Log($"Catálogo no disponible: {ex.Message}");
+            }
+            ApplyFilters();
 
-                var wua = pending.Concat(await wuaInstalledTask).ToList();
+            // 3) Windows Update: marca cuales estan disponibles o bloqueadas en este equipo.
+            StatusText.Text = "Windows Update...";
+            try
+            {
+                var wua = await wuaTask;
+                MergeWindowsUpdate(wua);
+                ApplyFilters();
+
+                StatusText.Text = "Bloqueadas...";
+                var hidden = await Task.Run(WindowsUpdateService.SearchHidden);
+                var known = new HashSet<string>(wua.Select(w => w.UpdateId), StringComparer.OrdinalIgnoreCase);
+                var extra = hidden.Where(h => !known.Contains(h.UpdateId)).ToList();
+                MergeWindowsUpdate(extra);
+                wua.AddRange(extra);
+
                 EnrichFromWindowsUpdate(wua);
-                AddMissingProblemKbs();
             }
             catch (Exception ex)
             {
                 Log($"Windows Update no disponible: {ex.Message}");
             }
+            AddMissingProblemKbs();
         }
         catch (Exception ex)
         {
@@ -197,6 +212,65 @@ public partial class UpdatesPage : UserControl
         {
             SetBusy(false);
             ApplyFilters();
+        }
+    }
+
+    private static bool SameUpdate(UpdateEntry e, string kb, bool isSecurity) =>
+        string.Equals(e.Kb, kb, StringComparison.OrdinalIgnoreCase) &&
+        CatalogService.IsSecurityTitle(e.Title) == isSecurity;
+
+    /// <summary>Agrega los KB publicados por Microsoft; los que no estan instalados quedan como "No instalada".</summary>
+    private void AddCatalogRows(List<CatalogItem> catalog)
+    {
+        foreach (var c in catalog)
+        {
+            var local = _items.FirstOrDefault(i => SameUpdate(i, c.Kb, c.IsSecurity));
+            if (local is not null)
+            {
+                local.PublishedDate ??= c.Date;
+                continue;
+            }
+
+            AddItem(new UpdateEntry
+            {
+                Kb = c.Kb,
+                Title = c.Title,
+                Product = c.Product,
+                State = UpdateState.NoInstalada,
+                PublishedDate = c.Date,
+            });
+        }
+    }
+
+    /// <summary>Aplica lo que reporta Windows Update: disponible o bloqueada, con el ID para poder ocultarla.</summary>
+    private void MergeWindowsUpdate(List<WuaItem> items)
+    {
+        foreach (var w in items)
+        {
+            bool isSecurity = CatalogService.IsSecurityTitle(w.Title);
+            var state = w.Hidden ? UpdateState.Bloqueada : UpdateState.Disponible;
+
+            var existing = _items.FirstOrDefault(i =>
+                string.Equals(i.UpdateId, w.UpdateId, StringComparison.OrdinalIgnoreCase)) ??
+                _items.FirstOrDefault(i => i.State == UpdateState.NoInstalada && w.Kb.Length > 0 && SameUpdate(i, w.Kb, isSecurity));
+
+            if (existing is not null)
+            {
+                existing.UpdateId = w.UpdateId;
+                existing.State = state;
+                existing.PublishedDate ??= w.Date;
+                continue;
+            }
+
+            AddItem(new UpdateEntry
+            {
+                Kb = w.Kb,
+                Title = w.Title,
+                Product = w.Product,
+                State = state,
+                UpdateId = w.UpdateId,
+                PublishedDate = w.Date,
+            });
         }
     }
 

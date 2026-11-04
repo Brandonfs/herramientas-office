@@ -14,7 +14,7 @@ public sealed class UpdateEntry : INotifyPropertyChanged
     public required string Title { get; init; }
     public required string Product { get; init; }
     public string? UninstallString { get; init; }
-    public string? UpdateId { get; init; }
+    public string? UpdateId { get; set; }
 
     public UpdateState State
     {
